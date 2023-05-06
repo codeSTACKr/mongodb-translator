@@ -21,6 +21,7 @@ export default async function handler(
       inputText,
       process.env.OPENAI_API_KEY
     );
+    console.log(outputText);
     res.status(200).json({ outputText });
   } catch (error) {
     console.error(error);

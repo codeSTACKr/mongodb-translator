@@ -1,0 +1,27 @@
+{
+  "title": "cars",
+  "properties": {
+    "_id": {
+      "bsonType": "objectId"
+    },
+    "make": {
+      "bsonType": "string"
+    },
+    "model": {
+      "bsonType": "string"
+    },
+    "year": {
+      "bsonType": "number"
+    },
+    "color": {
+      "bsonType": "string"
+    }
+  },
+  "required": [
+    "_id",
+    "make",
+    "model",
+    "year",
+    "color"
+  ]
+}

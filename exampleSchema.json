@@ -1,0 +1,135 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "definitions": {
+      "User": {
+        "bsonType": "object",
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "username": {
+            "bsonType": "string"
+          },
+          "email": {
+            "bsonType": "string"
+          },
+          "password": {
+            "bsonType": "string"
+          },
+          "created_at": {
+            "bsonType": "date"
+          }
+        },
+        "required": [
+          "_id",
+          "username",
+          "email",
+          "password",
+          "created_at"
+        ]
+      },
+      "Post": {
+        "bsonType": "object",
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "user": {
+            "$ref": "#/definitions/User"
+          },
+          "content": {
+            "bsonType": "string"
+          },
+          "image_url": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "video_url": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "bsonType": "date"
+          },
+          "likes": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "object",
+              "properties": {
+                "_id": {
+                  "bsonType": "objectId"
+                },
+                "user": {
+                  "$ref": "#/definitions/User"
+                },
+                "created_at": {
+                  "bsonType": "date"
+                }
+              },
+              "required": [
+                "_id",
+                "user",
+                "created_at"
+              ]
+            }
+          },
+          "comments": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "object",
+              "properties": {
+                "_id": {
+                  "bsonType": "objectId"
+                },
+                "user": {
+                  "$ref": "#/definitions/User"
+                },
+                "content": {
+                  "bsonType": "string"
+                },
+                "created_at": {
+                  "bsonType": "date"
+                }
+              },
+              "required": [
+                "_id",
+                "user",
+                "content",
+                "created_at"
+              ]
+            }
+          }
+        },
+        "required": [
+          "_id",
+          "user",
+          "content",
+          "created_at"
+        ]
+      }
+    },
+    "properties": {
+      "Users": {
+        "bsonType": "array",
+        "items": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "Posts": {
+        "bsonType": "array",
+        "items": {
+          "$ref": "#/definitions/Post"
+        }
+      }
+    },
+    "required": [
+      "Users",
+      "Posts"
+    ]
+  }
+}

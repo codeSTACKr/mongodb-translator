@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import translateToSQL from "../../src/translateToSQL";
+import translateToMQL from "../../src/translateToMQL";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
@@ -11,17 +11,17 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { inputText, tableSchema } = req.body;
+  const { inputText, documentSchema } = req.body;
   try {
-    const result = await translateToSQL(
+    const result = await translateToMQL(
       inputText,
       process.env.OPENAI_API_KEY,
-      tableSchema
+      documentSchema
     );
-    // console.log(res);
+    console.log(result);
     res.status(200).json({ outputText: result });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error translating to SQL" });
+    res.status(500).json({ message: "Error translating to MongoDB Query API" });
   }
 }

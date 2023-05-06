@@ -1,7 +1,7 @@
 version: "3.8"
 services:
-  sql-translator:
-    container_name: sql-translator
+  mongodb-translator:
+    container_name: mongodb-translator
     build: .
     env_file:
       - .env.production

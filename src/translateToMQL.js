@@ -1,8 +1,10 @@
 import fetch from "isomorphic-unfetch";
 
-const translateToSQL = async (query, apiKey, tableSchema = "") => {
-  const prompt = `Translate this natural language query into SQL without changing the case of the entries given by me:\n\n"${query}"\n\n${tableSchema ? `Use this table schema:\n\n${tableSchema}\n\n` : ''}SQL Query:`;
-  
+const translateToMQL = async (query, apiKey, documentSchema = "") => {
+  const prompt = `Translate this natural language query into a MongoDB query:\n\n"${query}"\n\n${
+    documentSchema ? `Use this json schema:\n\n${documentSchema}\n\n` : ""
+  }MongoDB Query:`;
+
   console.log(prompt);
   const response = await fetch("https://api.openai.com/v1/completions", {
     method: "POST",
@@ -26,10 +28,10 @@ const translateToSQL = async (query, apiKey, tableSchema = "") => {
   const data = await response.json();
   if (!response.ok) {
     console.log(response);
-    throw new Error(data.error || "Error translating to SQL.");
+    throw new Error(data.error || "Error translating to MongoDB Query API.");
   }
 
   return data.choices[0].text.trim();
 };
 
-export default translateToSQL;
+export default translateToMQL;

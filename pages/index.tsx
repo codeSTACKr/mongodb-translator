@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-const SyntaxHighlighter = dynamic(() => import("react-syntax-highlighter"));
-import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/hljs";
+// const SyntaxHighlighter = dynamic(() => import("react-syntax-highlighter"));
+// import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/hljs";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vs, dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 import Head from "next/head";
 import { Analytics } from "@vercel/analytics/react";
 import ThemeButton from "../components/ThemeButton";
@@ -9,20 +11,21 @@ import { useTranslate } from "../hooks/useTranslate";
 import { toast } from "react-hot-toast";
 import LoadingDots from "../components/LoadingDots";
 import { useTheme } from "next-themes";
-import Toggle from "../components/Toggle";
 import { Header } from "../components/Header/Header";
+import carsSchema from "../src/carsSchemaExample.json";
+
 interface IHistory {
   inputText: string;
   outputText: string;
-  tableSchema?: string;
-  isHumanToSql?: boolean;
+  documentSchema?: string;
+  isHumanToMql?: boolean;
 }
 
 interface IHistoryEntry {
   inputText: string;
   outputText: string;
-  tableSchema?: string;
-  isHumanToSql?: boolean;
+  documentSchema?: string;
+  isHumanToMql?: boolean;
 }
 
 interface ITextCopied {
@@ -30,13 +33,12 @@ interface ITextCopied {
   isHistory: boolean;
   text: string;
 }
-interface prev{
+interface prev {
   previnput: string;
   prevoutput: string;
 }
 
 export default function Home() {
-  
   const { resolvedTheme } = useTheme();
   const isThemeDark = resolvedTheme === "dark";
   const [mounted, setMounted] = useState(false);
@@ -49,10 +51,9 @@ export default function Home() {
   } = useTranslate();
   const [inputText, setInputText] = useState("");
   const [prevquery, setPrevquery] = useState<prev[]>([]);
-  const [isHumanToSql, setIsHumanToSql] = useState(true);
-  const [isOutputTextUpperCase, setIsOutputTextUpperCase] = useState(false);
-  const [tableSchema, setTableSchema] = useState("");
-  const [showTableSchema, setShowTableSchema] = useState(false);
+  const [isHumanToMql, setIsHumanToMql] = useState(true);
+  const [documentSchema, setDocumentSchema] = useState("");
+  const [showDocumentSchema, setShowDocumentSchema] = useState(false);
   const [history, setHistory] = useState<IHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [hasTranslated, setHasTranslated] = useState(false);
@@ -65,15 +66,15 @@ export default function Home() {
         {
           inputText: JSON.stringify(inputText),
           outputText: JSON.stringify(outputText),
-          tableSchema,
-          isHumanToSql,
+          documentSchema,
+          isHumanToMql,
         },
       ]);
 
       addHistoryEntry({
         inputText: JSON.stringify(inputText),
-        tableSchema,
-        isHumanToSql,
+        documentSchema,
+        isHumanToMql,
         outputText: JSON.stringify(outputText),
       });
 
@@ -93,12 +94,6 @@ export default function Home() {
     return null;
   }
 
-  const isValidTableSchema = (text: string) => {
-    const pattern = /^CREATE\s+TABLE\s+\w+\s*\((\s*.+\s*,?\s*)+\);?$/i;
-    const regex = new RegExp(pattern);
-      return regex.test(text.trim());
-  };
-
   const addHistoryEntry = (entry: IHistory) => {
     if (
       !history.some(
@@ -111,12 +106,22 @@ export default function Home() {
       )
     ) {
       setHistory([...history, entry]);
-      
     }
-    const newhistory: prev = {previnput : entry.inputText, prevoutput : entry.outputText};
-    setPrevquery([...prevquery,newhistory]);
-    
+    const newhistory: prev = {
+      previnput: entry.inputText,
+      prevoutput: entry.outputText,
+    };
+    setPrevquery([...prevquery, newhistory]);
   };
+
+  function isValidJSON(str: string) {
+    try {
+      JSON.parse(str);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 
   function safeJSONParse(str: string) {
     try {
@@ -129,8 +134,8 @@ export default function Home() {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(event.target.value);
-    if (!showTableSchema) {
-      setTableSchema("");
+    if (!showDocumentSchema) {
+      setDocumentSchema("");
     }
   };
 
@@ -139,14 +144,14 @@ export default function Home() {
     setCopied({
       isCopied: true,
       isHistory: isHistory,
-      text: text
-    })
-     setTimeout(() => {
+      text: text,
+    });
+    setTimeout(() => {
       setCopied({
         isCopied: false,
         isHistory: isHistory,
-        text: text
-      }) 
+        text: text,
+      });
     }, 3000);
   };
 
@@ -160,25 +165,29 @@ export default function Home() {
 
     try {
       // Validate input syntax
-      if (!isHumanToSql) {
-        const pattern =
-          /^\s*(select|insert|update|delete|create|alter|drop|truncate|grant|revoke|use|begin|commit|rollback)\s/i;
-        const regex = new RegExp(pattern);
-        if (!regex.test(inputText)) {
-          toast.error("Invalid SQL syntax.");
-          return;
-        }
+      if (!isHumanToMql) {
+        // const pattern =
+        //   /^\s*(select|insert|update|delete|create|alter|drop|truncate|grant|revoke|use|begin|commit|rollback)\s/i;
+        // const regex = new RegExp(pattern);
+        // if (!regex.test(inputText)) {
+        //   toast.error("Invalid MQL syntax.");
+        //   return;
+        // }
       }
-      if (showTableSchema && !isValidTableSchema(tableSchema)) {
-        toast.error("Invalid table schema.");
+      if (showDocumentSchema && !isValidJSON(documentSchema)) {
+        toast.error("Invalid document schema.");
         return;
       }
 
-      translate({ inputText, tableSchema, isHumanToSql });
+      translate({ inputText, documentSchema, isHumanToMql });
       setHasTranslated(true);
     } catch (error) {
       console.log(error);
-      toast.error(`Error translating ${isHumanToSql ? "to SQL" : "to human"}.`);
+      toast.error(
+        `Error translating ${
+          isHumanToMql ? "to MongoDB Query API" : "to human"
+        }.`
+      );
     }
   };
 
@@ -187,7 +196,9 @@ export default function Home() {
       <Header />
       <Head>
         <title className="flex justify-between items-center w-full mt-5 pb-7 sm:px-4 px-2">
-          {isHumanToSql ? "Human to SQL Translator" : "SQL to Human Translator"}
+          {isHumanToMql
+            ? "Human to MongoDB Query API Translator"
+            : "MongoDB Query API to Human Translator"}
         </title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -204,7 +215,7 @@ export default function Home() {
                 htmlFor="inputText"
                 className="block font-medium mb-2 text-gray-700 dark:text-gray-200"
               >
-                {isHumanToSql ? "Human Language" : "SQL"}
+                {isHumanToMql ? "Human Language" : "MongoDB Query API"}
               </label>
               <textarea
                 className={`appearance-none border-0 rounded-lg w-full py-2 px-3 bg-custom-gray-bg dark:bg-custom-dark-gray text-gray-700 dark:text-white leading-tight focus:outline-none focus:shadow-outline ${
@@ -213,9 +224,9 @@ export default function Home() {
                 id="inputText"
                 rows={3}
                 placeholder={
-                  isHumanToSql
+                  isHumanToMql
                     ? "e.g. show me all the cars that are red"
-                    : "SELECT * FROM cars WHERE color = 'red'"
+                    : "e.g. db.cars.find({ color: 'red' });"
                 }
                 value={inputText}
                 onChange={handleInputChange}
@@ -229,13 +240,13 @@ export default function Home() {
                 }}
                 required
               />
-              {tableSchema && showTableSchema && (
+              {documentSchema && showDocumentSchema && (
                 <div className="mt-4">
                   <h2 className="mb-2 font-medium text-sm text-gray-500 dark:text-white">
-                    Table Schema
+                    Document JSON Schema
                   </h2>
                   <SyntaxHighlighter
-                    language="sql"
+                    language="mongodb"
                     style={isThemeDark ? dracula : vs}
                     wrapLines={true}
                     showLineNumbers={true}
@@ -243,7 +254,7 @@ export default function Home() {
                     customStyle={{
                       maxHeight: "none",
                       height: "auto",
-                      overflow: "visible",
+                      // overflow: "visible",
                       wordWrap: "break-word",
                       color: "inherit",
                       backgroundColor: isThemeDark ? "#1D1D1D" : "#F8F8F8",
@@ -251,28 +262,28 @@ export default function Home() {
                     }}
                     lineProps={{ style: { whiteSpace: "pre-wrap" } }}
                   >
-                    {tableSchema}
+                    {documentSchema}
                   </SyntaxHighlighter>
                 </div>
               )}
 
               <div className="flex items-center justify-between my-3 last:mb-0 space-x-10">
-                {isHumanToSql && (
+                {isHumanToMql && (
                   <button
-                    type='button'
+                    type="button"
                     className={`rounded-full flex items-center justify-center space-x-4 border text-sm font-medium px-4 py-2 [text-shadow:0_0_1px_rgba(0,0,0,0.25)] ${
                       resolvedTheme === "light"
                         ? buttonStyles.light
                         : buttonStyles.dark
                     }`}
                     onClick={() => {
-                      setShowTableSchema(!showTableSchema);
-                      if (!showTableSchema) {
-                        setTableSchema("");
+                      setShowDocumentSchema(!showDocumentSchema);
+                      if (!showDocumentSchema) {
+                        setDocumentSchema("");
                       }
                     }}
                   >
-                    {showTableSchema ? "Remove Schema" : "Add Schema"}
+                    {showDocumentSchema ? "Remove Schema" : "Add Schema"}
                   </button>
                 )}
 
@@ -283,7 +294,7 @@ export default function Home() {
                   }`}
                   disabled={translating}
                 >
-                  <img src="/stars.svg"></img>&nbsp;
+                  <img src="/stars.svg" alt="image of stars"></img>&nbsp;
                   <div className="relative text-sm font-semibold font-inter text-white text-center inline-block mx-auto">
                     {translating ? (
                       <>
@@ -291,19 +302,19 @@ export default function Home() {
                         <LoadingDots color="white" />
                       </>
                     ) : (
-                      `Generate ${isHumanToSql ? "SQL" : "Natural Language"}`
+                      `Generate ${isHumanToMql ? "Query" : "Natural Language"}`
                     )}
                   </div>
                 </button>
               </div>
 
-              {isHumanToSql && showTableSchema && (
+              {isHumanToMql && showDocumentSchema && (
                 <div className="flex flex-col mt-2">
                   <label
-                    htmlFor="tableSchema"
+                    htmlFor="documentSchema"
                     className="block mb-2 text-sm font-medium text-gray-500 dark:text-white"
                   >
-                    Table Schema Input
+                    JSON Schema Input
                     <span className="ml-2 text-blue-600 bg-blue-50 dark:bg-gray-200 text-xs px-[4px] py-1 rounded-md">
                       Optional
                     </span>
@@ -312,15 +323,15 @@ export default function Home() {
                     className={`appearance-none border-0 rounded-lg w-full py-2 px-3 bg-custom-gray-bg dark:bg-custom-dark-gray text-gray-700 dark:text-white leading-tight focus:outline-none focus:shadow-outline ${
                       isThemeDark ? "placeholder-dark" : ""
                     }`}
-                    id="tableSchema"
+                    id="documentSchema"
                     rows={3}
-                    placeholder="e.g. CREATE TABLE cars (id INT, make TEXT, model TEXT, year INT, color TEXT)"
-                    value={tableSchema}
+                    placeholder={`e.g. ${JSON.stringify(carsSchema, null, 2)}`}
+                    value={documentSchema}
                     autoFocus
-                    onChange={(event) => setTableSchema(event.target.value)}
+                    onChange={(event) => setDocumentSchema(event.target.value)}
                     onBlur={() => {
-                      if (!showTableSchema) {
-                        setTableSchema("");
+                      if (!showDocumentSchema) {
+                        setDocumentSchema("");
                       }
                     }}
                   />
@@ -334,7 +345,7 @@ export default function Home() {
             <button
               className={`text-gray-700 dark:text-gray-200 cursor-pointer mx-auto`}
               onClick={() => {
-                setIsHumanToSql(!isHumanToSql);
+                setIsHumanToMql(!isHumanToMql);
                 setOutputText("");
               }}
             >
@@ -355,10 +366,10 @@ export default function Home() {
                 htmlFor="outputText"
                 className="block mb-2 font-medium  text-gray-700 dark:text-gray-200"
               >
-                {isHumanToSql ? "SQL" : "Human Language"}
+                {isHumanToMql ? "MongoDB Query API" : "Human Language"}
               </label>
               <SyntaxHighlighter
-                language={isHumanToSql ? "sql" : "text"}
+                language={isHumanToMql ? "mongodb" : "text"}
                 style={isThemeDark ? dracula : vs}
                 wrapLines={true}
                 showLineNumbers={true}
@@ -366,7 +377,7 @@ export default function Home() {
                 customStyle={{
                   maxHeight: "none",
                   height: "auto",
-                  overflow: "visible",
+                  // overflow: "visible",
                   wordWrap: "break-word",
                   color: "inherit",
                   backgroundColor: isThemeDark ? "#1D1D1D" : "#F8F8F8",
@@ -375,12 +386,10 @@ export default function Home() {
                 }}
                 lineProps={{ style: { whiteSpace: "pre-wrap" } }}
               >
-                {isOutputTextUpperCase
-                  ? outputText.toUpperCase()
-                  : outputText.toLowerCase() ||
-                    (isHumanToSql
-                      ? "SELECT * FROM cars WHERE color = 'red'"
-                      : "show me all the cars that are red")}
+                {outputText ||
+                  (isHumanToMql
+                    ? "db.cars.find({ color: 'red' });"
+                    : "show me all the cars that are red")}
               </SyntaxHighlighter>
             </div>
 
@@ -393,7 +402,10 @@ export default function Home() {
                       : buttonStyles.dark
                   }`}
                   onClick={() => handleCopy(outputText, false)}
-                  disabled={!copied?.isHistory && copied?.text === outputText || copied?.isCopied }
+                  disabled={
+                    (!copied?.isHistory && copied?.text === outputText) ||
+                    copied?.isCopied
+                  }
                 >
                   <img
                     src={
@@ -403,29 +415,15 @@ export default function Home() {
                   />
                 </button>
 
-                {!copied?.isHistory && copied?.isCopied && copied.text == outputText && (
-                  <p className="text-black-500 text-xs">Copied to clipboard</p>
-                )}
+                {!copied?.isHistory &&
+                  copied?.isCopied &&
+                  copied.text == outputText && (
+                    <p className="text-black-500 text-xs">
+                      Copied to clipboard
+                    </p>
+                  )}
               </div>
-              {isHumanToSql && (
-                <div className="flex items-center ml-4">
-                  <Toggle
-                    isUppercase={isOutputTextUpperCase}
-                    handleSwitchText={setIsOutputTextUpperCase}
-                  />
-                </div>
-              )}
             </div>
-            <textarea
-              className="hidden"
-              id="outputText"
-              value={
-                isOutputTextUpperCase
-                  ? outputText.toUpperCase()
-                  : outputText.toLowerCase()
-              }
-              readOnly
-            />
           </div>
         </div>
       </div>
@@ -443,7 +441,7 @@ export default function Home() {
 
       {showHistory && (
         <>
-          {history.length > 0 && 
+          {history.length > 0 &&
             history.map((entry: IHistoryEntry, index: number) => (
               <div key={index} className="w-full mb-6">
                 <div className="flex flex-col md:flex-row w-full gap-6 bg-custom-background bg-gray-100 dark:bg-black dark:border-gray-800 border rounded-3xl from-blue-500 p-3">
@@ -453,9 +451,11 @@ export default function Home() {
                         htmlFor="inputText"
                         className="block mb-2 text-gray-300"
                       >
-                        {entry.isHumanToSql ? "Human Language" : "SQL"}
+                        {entry.isHumanToMql
+                          ? "Human Language"
+                          : "MongoDB Query API"}
                       </label>
-                      {entry.isHumanToSql ? (
+                      {entry.isHumanToMql ? (
                         <div
                           className={`${
                             isThemeDark ? "text-white" : "text-black"
@@ -465,7 +465,7 @@ export default function Home() {
                         </div>
                       ) : (
                         <SyntaxHighlighter
-                          language="sql"
+                          language="mongodb"
                           style={isThemeDark ? dracula : vs}
                           wrapLines={true}
                           showLineNumbers={true}
@@ -476,7 +476,7 @@ export default function Home() {
                             minHeight: "70px",
                             maxHeight: "none",
                             height: "auto",
-                            overflow: "visible",
+                            // overflow: "visible",
                             wordWrap: "break-word",
                             color: "inherit",
                             backgroundColor: isThemeDark
@@ -497,11 +497,13 @@ export default function Home() {
                         htmlFor="outputText"
                         className="block mb-2 text-gray-300"
                       >
-                        {entry.isHumanToSql ? "SQL" : "Human Language"}
+                        {entry.isHumanToMql
+                          ? "MongoDB Query API"
+                          : "Human Language"}
                       </label>
-                      {entry.isHumanToSql ? (
+                      {entry.isHumanToMql ? (
                         <SyntaxHighlighter
-                          language="sql"
+                          language="mongodb"
                           style={isThemeDark ? dracula : vs}
                           wrapLines={true}
                           showLineNumbers={true}
@@ -512,7 +514,7 @@ export default function Home() {
                             minHeight: "70px",
                             maxHeight: "none",
                             height: "auto",
-                            overflow: "visible",
+                            // overflow: "visible",
                             wordWrap: "break-word",
                             color: "inherit",
                             backgroundColor: isThemeDark
@@ -536,25 +538,38 @@ export default function Home() {
                         <button
                           className={`flex items-center disabled:pointer-events-none disabled:opacity-70 justify-center space-x-4 rounded-full px-5 py-2 text-sm font-medium transition ${
                             resolvedTheme === "light"
-                            ? buttonStyles.light
-                            : buttonStyles.dark
-                            }`}
-                          onClick={() => handleCopy(safeJSONParse(entry?.outputText), true)}
-                          disabled={copied?.isHistory && JSON.stringify(copied?.text) === entry?.outputText || copied?.isCopied } 
+                              ? buttonStyles.light
+                              : buttonStyles.dark
+                          }`}
+                          onClick={() =>
+                            handleCopy(safeJSONParse(entry?.outputText), true)
+                          }
+                          disabled={
+                            (copied?.isHistory &&
+                              JSON.stringify(copied?.text) ===
+                                entry?.outputText) ||
+                            copied?.isCopied
+                          }
                         >
                           <img
                             src={
-                            resolvedTheme === "light" ? "/copyDark.svg" : "/copy.svg"
+                              resolvedTheme === "light"
+                                ? "/copyDark.svg"
+                                : "/copy.svg"
                             }
                             alt="Copy"
                           />
                         </button>
-                        {copied?.isHistory && copied?.isCopied && copied.text == safeJSONParse(entry?.outputText) && (
-                          <p className="text-black-500 text-xs">Copied to clipboard</p>
-                        )}
-                        </div>
+                        {copied?.isHistory &&
+                          copied?.isCopied &&
+                          copied.text == safeJSONParse(entry?.outputText) && (
+                            <p className="text-black-500 text-xs">
+                              Copied to clipboard
+                            </p>
+                          )}
                       </div>
                     </div>
+                  </div>
                 </div>
               </div>
             ))}

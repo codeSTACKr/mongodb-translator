@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+const SyntaxHighlighter = dynamic(() => import("react-syntax-highlighter"));
+import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/hljs";
 // const SyntaxHighlighter = dynamic(() => import("react-syntax-highlighter"));
-// import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/hljs";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/prism";
+// import { vs, dracula } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import Head from "next/head";
 import { Analytics } from "@vercel/analytics/react";
 import ThemeButton from "../components/ThemeButton";
